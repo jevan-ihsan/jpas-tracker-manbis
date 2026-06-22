@@ -262,7 +262,7 @@ if file_path and os.path.exists(file_path):
     }
     
     st.sidebar.markdown('<hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0">', unsafe_allow_html=True)
-    st.sidebar.info(f"✅ Tipe file terdeteksi: **{type_display_map.get(file_type, 'Unknown')}**")
+    st.sidebar.info(f"Tipe file terdeteksi: {type_display_map.get(file_type, 'Unknown')}")
     
     # Parse data
     with st.spinner("Membaca dan memetakan data Excel secara otomatis..."):
@@ -272,7 +272,7 @@ if file_path and os.path.exists(file_path):
     if not parsed.get('pl_data') and not parsed.get('mitra_data'):
         st.markdown("""
         <div style="background:#fff7ed; border-radius:16px; padding:28px; border:1px solid #fed7aa; border-left:6px solid #f97316; margin-top:20px;">
-            <div style="font-size:1.3rem; font-weight:700; color:#c2410c; margin-bottom:14px;">⚠️ Gagal Membaca Data dari File Ini</div>
+            <div style="font-size:1.3rem; font-weight:700; color:#c2410c; margin-bottom:14px;">Gagal Membaca Data dari File Ini</div>
             <p style="color:#7c2d12; margin-bottom:16px;">Sistem tidak berhasil mengekstrak data keuangan dari file yang dipilih. Berikut kemungkinan penyebab dan solusinya:</p>
             <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
                 <tr style="background:#fef3c7;">

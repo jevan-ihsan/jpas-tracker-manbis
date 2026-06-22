@@ -47,13 +47,13 @@ def generate_takeaways_and_critique(ratios, parsed=None):
                         arah = "Lonjakan" if pct_change > 0 else "Penurunan"
                         nama_lower = str(item_name).lower()
                         if pct_change > 0 and ("laba" in nama_lower or "pendapatan" in nama_lower or "profit" in nama_lower):
-                            warna = "🟢"
+                            warna = "[NAIK]"
                         elif pct_change < 0 and ("laba" in nama_lower or "pendapatan" in nama_lower or "profit" in nama_lower):
-                            warna = "🔴"
+                            warna = "[TURUN]"
                         elif pct_change < 0 and ("klaim" in nama_lower or "beban" in nama_lower or "claim" in nama_lower):
-                            warna = "🟢"
+                            warna = "[TURUN]"
                         else:
-                            warna = "🟠"
+                            warna = "[!]"
                         
                         takeaways['anomali_dinamis'].append(
                             f"**{warna} {arah} Signifikan pada '{item_name}' ({category_name}):** "
