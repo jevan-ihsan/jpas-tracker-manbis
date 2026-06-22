@@ -47,20 +47,23 @@ def generate_takeaways_and_critique(ratios, parsed=None):
                         arah = "Lonjakan" if pct_change > 0 else "Penurunan"
                         nama_lower = str(item_name).lower()
                         if pct_change > 0 and ("laba" in nama_lower or "pendapatan" in nama_lower or "profit" in nama_lower):
-                            warna = "[NAIK]"
+                            tipe = "positif"
                         elif pct_change < 0 and ("laba" in nama_lower or "pendapatan" in nama_lower or "profit" in nama_lower):
-                            warna = "[TURUN]"
+                            tipe = "negatif"
                         elif pct_change < 0 and ("klaim" in nama_lower or "beban" in nama_lower or "claim" in nama_lower):
-                            warna = "[TURUN]"
+                            tipe = "positif"
+                        elif pct_change > 0 and ("klaim" in nama_lower or "beban" in nama_lower or "claim" in nama_lower):
+                            tipe = "negatif"
                         else:
-                            warna = "[!]"
+                            tipe = "peringatan"
                         
-                        takeaways['anomali_dinamis'].append(
-                            f"**{warna} {arah} Signifikan pada '{item_name}' ({category_name}):** "
-                            f"Berubah sebesar **{pct_change*100:+.1f}%** dari {format_rupiah(val1)} menjadi {format_rupiah(val2)}. "
-                            f"Selisih nominal mencapai **{format_rupiah(diff)}**. "
-                            f"Sistem merekomendasikan investigasi langsung terhadap pos ini karena menyimpang drastis dari periode sebelumnya."
-                        )
+                        takeaways['anomali_dinamis'].append({
+                            'tipe': tipe,
+                            'title': f"{arah} Signifikan pada '{item_name}' ({category_name})",
+                            'content': f"Berubah sebesar **{pct_change*100:+.1f}%** dari {format_rupiah(val1)} menjadi {format_rupiah(val2)}. "
+                                       f"Selisih nominal mencapai **{format_rupiah(diff)}**. "
+                                       f"Sistem merekomendasikan investigasi langsung terhadap pos ini karena menyimpang drastis dari periode sebelumnya."
+                        })
 
         scan_anomalies(pl_data, "Laba Rugi")
         scan_anomalies(bs_data, "Neraca")

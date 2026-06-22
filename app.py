@@ -772,10 +772,40 @@ if file_path and os.path.exists(file_path):
             # Render Dynamic Anomalies
             if 'anomali_dinamis' in analysis and analysis['anomali_dinamis']:
                 st.markdown('<h3 style="color:#eab308; margin-top: 2.5rem; margin-bottom: 15px;">Radar Anomali Dinamis (Deteksi Otomatis Algoritma)</h3>', unsafe_allow_html=True)
-                st.markdown('<p style="color:#64748b; font-size:0.95rem;">Sistem secara otomatis memindai seluruh komponen laporan keuangan untuk mendeteksi lonjakan atau penurunan ekstrem (&gt; 25% dan &gt; Rp 1 Miliar).</p>', unsafe_allow_html=True)
-                for t in analysis['anomali_dinamis']:
-                    t_html = format_md_to_html(t)
-                    st.markdown(f'<div style="background:#fffbeb; border-radius:12px; padding:16px; border:1px solid #fde68a; border-left:6px solid #eab308; margin-bottom:14px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">{t_html}</div>', unsafe_allow_html=True)
+                st.markdown('<p style="color:#64748b; font-size:0.95rem; margin-bottom: 20px;">Sistem secara otomatis memindai seluruh komponen laporan keuangan untuk mendeteksi lonjakan atau penurunan ekstrem (&gt; 25% dan &gt; Rp 1 Miliar).</p>', unsafe_allow_html=True)
+                
+                anomali_positif = [t for t in analysis['anomali_dinamis'] if t.get('tipe') == 'positif']
+                anomali_peringatan = [t for t in analysis['anomali_dinamis'] if t.get('tipe') == 'peringatan']
+                anomali_negatif = [t for t in analysis['anomali_dinamis'] if t.get('tipe') == 'negatif']
+                
+                col_ano_pos, col_ano_per, col_ano_neg = st.columns(3)
+                
+                with col_ano_pos:
+                    st.markdown('<div style="font-weight: 700; color:#0d9488; font-size:1.05rem; border-bottom: 2px solid #0d9488; padding-bottom: 6px; margin-bottom: 15px;">ANOMALI POSITIF (Membaik)</div>', unsafe_allow_html=True)
+                    if anomali_positif:
+                        for t in anomali_positif:
+                            t_html = format_md_to_html(f"**{t['title']}**\n\n{t['content']}")
+                            st.markdown(f'<div class="triage-card positif-card">{t_html}</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown('<p style="color:#64748b; font-style:italic; font-size:0.85rem;">Tidak ada anomali positif terdeteksi.</p>', unsafe_allow_html=True)
+                        
+                with col_ano_per:
+                    st.markdown('<div style="font-weight: 700; color:#d97706; font-size:1.05rem; border-bottom: 2px solid #d97706; padding-bottom: 6px; margin-bottom: 15px;">ANOMALI PERHATIAN (Netral)</div>', unsafe_allow_html=True)
+                    if anomali_peringatan:
+                        for t in anomali_peringatan:
+                            t_html = format_md_to_html(f"**{t['title']}**\n\n{t['content']}")
+                            st.markdown(f'<div class="triage-card perhatian-card">{t_html}</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown('<p style="color:#64748b; font-style:italic; font-size:0.85rem;">Tidak ada anomali perhatian terdeteksi.</p>', unsafe_allow_html=True)
+                        
+                with col_ano_neg:
+                    st.markdown('<div style="font-weight: 700; color:#b91c1c; font-size:1.05rem; border-bottom: 2px solid #b91c1c; padding-bottom: 6px; margin-bottom: 15px;">ANOMALI NEGATIF (Memburuk)</div>', unsafe_allow_html=True)
+                    if anomali_negatif:
+                        for t in anomali_negatif:
+                            t_html = format_md_to_html(f"**{t['title']}**\n\n{t['content']}")
+                            st.markdown(f'<div class="triage-card kritis-card">{t_html}</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown('<p style="color:#64748b; font-style:italic; font-size:0.85rem;">Tidak ada anomali negatif terdeteksi.</p>', unsafe_allow_html=True)
 
             # Displays Critical Thinking Sections in beautiful structured border cards
             st.markdown('<h3 style="color:#0d9488; margin-top: 2.5rem; margin-bottom: 15px;">Analisis Kritis Rantai Efek Sebab-Akibat Keuangan</h3>', unsafe_allow_html=True)
