@@ -21,9 +21,12 @@ def calculate_ratios(parsed_data):
     yoy_gross_claims = ((gross_claims - gross_claims_prev) / abs(gross_claims_prev) * 100.0) if gross_claims_prev != 0 else 0.0
     
     reinsurance_claims = pl.get('reinsurance_claims', {}).get('curr_month', 0.0)
+    net_recoveries = pl.get('net_recoveries', {}).get('curr_month', 0.0)
+    net_recoveries_prev = pl.get('net_recoveries', {}).get('yoy_prev', 0.0)
+    yoy_net_recoveries = ((net_recoveries - net_recoveries_prev) / abs(net_recoveries_prev) * 100.0) if net_recoveries_prev != 0 else 0.0
     
     # Claims Net
-    claims_net = abs(gross_claims) - abs(reinsurance_claims)
+    claims_net = abs(gross_claims) - abs(reinsurance_claims) - abs(net_recoveries)
     claims_net = max(claims_net, 0.0)
     
     loss_ratio = (claims_net / net_uw_income * 100.0) if net_uw_income > 0 else 0.0
@@ -39,10 +42,6 @@ def calculate_ratios(parsed_data):
     
     reinsurance_expense = abs(pl.get('reinsurance_expense', {}).get('curr_month', 0.0))
     cession_rate = (reinsurance_expense / ijk_bruto * 100.0) if ijk_bruto > 0 else 0.0
-    
-    net_recoveries = pl.get('net_recoveries', {}).get('curr_month', 0.0)
-    net_recoveries_prev = pl.get('net_recoveries', {}).get('yoy_prev', 0.0)
-    yoy_net_recoveries = ((net_recoveries - net_recoveries_prev) / abs(net_recoveries_prev) * 100.0) if net_recoveries_prev != 0 else 0.0
     
     claims_receivable = bs.get('claims_receivable', {}).get('curr_month', 0.0)
     claims_receivable_prev = bs.get('claims_receivable', {}).get('prev_year_yoy', 0.0)
@@ -220,8 +219,15 @@ def calculate_ratios(parsed_data):
     # 7. Skor Kesehatan OJK (Approximation)
     # 1. Likuiditas: approx current assets / current liab
     # 2. Gearing
-    # 3. ROA: (EBT / Total Assets) * 100
-    roa = (ebt / total_assets) * 100.0 if total_assets != 0 else 0.0
+    # 3. ROA: (Net Profit disetahunkan / Rata-rata Aset) * 100
+    # Let's annualize the Net Profit (Mei = 5 months)
+    month_factor = 5.0 # May 2026 is month 5
+    net_profit_annualized = net_profit * 12.0 / month_factor
+    
+    total_assets_prev = bs.get('total_assets', {}).get('prev_year_yoy', 0.0)
+    avg_assets = (total_assets + total_assets_prev) / 2.0 if total_assets_prev > 0.0 else total_assets
+    roa = (net_profit_annualized / avg_assets) * 100.0 if avg_assets > 0.0 else 0.0
+    
     # 4. BOPO: Total Opex / Total Revenue
     bopo = (total_opex / revenue) * 100.0 if revenue != 0 else 0.0
     # 5. Klaim Neto: (Net Claims / Net UW Income) = loss_ratio
@@ -243,6 +249,90 @@ def calculate_ratios(parsed_data):
         'score_bopo': score_bopo,
         'score_klaim': score_klaim,
         'composite_score': composite_score
+    }
+    
+    # 8. OJK PADK 47 Ratios for Sharia Guarantee Company (JPAS)
+    total_curr_assets = bs.get('total_current_assets', {}).get('curr_month', 0.0)
+    total_curr_liabilities = bs.get('total_current_liabilities', {}).get('curr_month', 0.0)
+    total_liabilities_val = bs.get('total_liabilities', {}).get('curr_month', 0.0)
+    
+    cash_giro = bs.get('cash_and_bank', {}).get('curr_month', 0.0)
+    deposito_l = bs.get('deposito_lancar', {}).get('curr_month', 0.0)
+    sbsn_l = bs.get('sbsn_lancar', {}).get('curr_month', 0.0)
+    reksadana_l = bs.get('reksadana_lancar', {}).get('curr_month', 0.0)
+    aset_likuid = cash_giro + deposito_l + sbsn_l + reksadana_l
+    
+    claims_reserve_val = bs.get('claims_reserve', {}).get('curr_month', 0.0)
+    
+    utang_klaim = bs.get('claims_payable_lancar', {}).get('curr_month', 0.0)
+    utang_komisi = bs.get('commission_payable', {}).get('curr_month', 0.0)
+    utang_klaim_coguar = bs.get('co_guarantee_claims_payable', {}).get('curr_month', 0.0)
+    utang_ijk_coguar = bs.get('co_guarantee_ijk_payable', {}).get('curr_month', 0.0)
+    utang_reas = bs.get('reinsurance_payable', {}).get('curr_month', 0.0)
+    utang_penjaminan = utang_klaim + utang_komisi + utang_klaim_coguar + utang_ijk_coguar + utang_reas
+    
+    # 1. Komposisi Aset Lancar
+    c_komp = (total_curr_assets / total_assets * 100.0) if total_assets > 0 else 0.0
+    # 2. Current Ratio
+    c_curr = (total_curr_assets / total_curr_liabilities * 100.0) if total_curr_liabilities > 0 else 0.0
+    # 3. Kecukupan Aset Likuid terhadap Klaim Dilaporkan
+    c_lik_claim = (aset_likuid / claims_reserve_val * 100.0) if claims_reserve_val > 0 else 0.0
+    # 4. Rasio Kecukupan Kas dan Giro terhadap Utang Penjaminan
+    c_kas_utang = (cash_giro / utang_penjaminan * 100.0) if utang_penjaminan > 0 else 0.0
+    
+    # 5. Kecukupan Investasi terhadap Cadangan Klaim
+    deposito_tl = bs.get('deposito_tidak_lancar', {}).get('curr_month', 0.0)
+    sbsn_tl = bs.get('sbsn_tidak_lancar', {}).get('curr_month', 0.0)
+    reksadana_tl = bs.get('reksadana_tidak_lancar', {}).get('curr_month', 0.0)
+    saham_l = bs.get('saham_lancar', {}).get('curr_month', 0.0)
+    saham_tl = bs.get('saham_tidak_lancar', {}).get('curr_month', 0.0)
+    sukuk_l = bs.get('sukuk_korporasi_lancar', {}).get('curr_month', 0.0)
+    sukuk_tl = bs.get('sukuk_korporasi_tidak_lancar', {}).get('curr_month', 0.0)
+    mtn_l = bs.get('mtn_lancar', {}).get('curr_month', 0.0)
+    mtn_tl = bs.get('mtn_tidak_lancar', {}).get('curr_month', 0.0)
+    
+    total_investasi = deposito_l + deposito_tl + sbsn_l + sbsn_tl + reksadana_l + reksadana_tl + saham_l + saham_tl + sukuk_l + sukuk_tl + mtn_l + mtn_tl
+    c_inv_claim = (total_investasi / claims_reserve_val * 100.0) if claims_reserve_val > 0 else 0.0
+    
+    # 6. Kecukupan Aset Lancar terhadap Beban Klaim (Net Claims)
+    ijk_ckpn = abs(bs.get('piutang_ijk_ckpn_lancar', {}).get('curr_month', 0.0))
+    c_assets_claim = ((total_curr_assets - ijk_ckpn) / claims_net * 100.0) if claims_net > 0 else 0.0
+    
+    # 7. Kecukupan Aset Likuid terhadap Klaim Disetujui
+    c_lik_disetujui = (aset_likuid / utang_klaim * 100.0) if utang_klaim > 0 else 0.0
+    
+    # 8. Kecukupan Aset Likuid terhadap Proyeksi Klaim Jangka Pendek
+    c_lik_proyeksi = (aset_likuid / (claims_reserve_val * 1.2) * 100.0) if claims_reserve_val > 0 else 0.0
+    
+    # Rentabilitas
+    total_equity_curr = bs.get('total_equity', {}).get('curr_month', 0.0)
+    total_equity_prev = bs.get('total_equity', {}).get('prev_year_yoy', 0.0)
+    avg_equity = (total_equity_curr + total_equity_prev) / 2.0 if total_equity_prev > 0.0 else total_equity_curr
+    
+    roa_syariah = roa
+    roe_syariah = (net_profit_annualized / avg_equity * 100.0) if avg_equity > 0.0 else 0.0
+    
+    # BOPO Syariah
+    bopo_syariah = ((claims_net + total_opex) / (net_uw_income + invest_income_curr) * 100.0) if (net_uw_income + invest_income_curr) > 0 else 0.0
+    
+    # Leverage Ratio OJK
+    leverage_ojk = (total_liabilities_val / total_equity_curr) if total_equity_curr > 0 else 0.0
+    
+    ratios['ojk_padk47'] = {
+        'komposisi_aset_lancar': c_komp,
+        'current_ratio': c_curr,
+        'aset_likuid_vs_klaim_dilaporkan': c_lik_claim,
+        'kas_giro_vs_utang_penjaminan': c_kas_utang,
+        'investasi_vs_cadangan_klaim': c_inv_claim,
+        'aset_lancar_vs_beban_klaim': c_assets_claim,
+        'aset_likuid_vs_klaim_disetujui': c_lik_disetujui,
+        'aset_likuid_vs_proyeksi_klaim': c_lik_proyeksi,
+        'roa_syariah': roa_syariah,
+        'roe_syariah': roe_syariah,
+        'bopo_syariah': bopo_syariah,
+        'net_claim_ratio_syariah': loss_ratio,
+        'pertumbuhan_ijk_syariah': yoy_ijk_bruto,
+        'leverage_ratio_ojk': leverage_ojk
     }
     
     ratios['concentration'] = {

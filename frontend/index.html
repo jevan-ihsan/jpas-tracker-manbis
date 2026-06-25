@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>JPAS Automated Financial Analyzer</title>
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+    
+    <!-- Tailwind CSS with custom config matching Google Stitch -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "var(--primary)",
+                        "primary-container": "var(--primary-container)",
+                        "on-primary-container": "var(--on-primary-container)",
+                        "secondary": "var(--secondary)",
+                        "secondary-container": "var(--secondary-container)",
+                        "on-secondary-fixed": "var(--on-secondary-fixed)",
+                        "tertiary": "var(--tertiary)",
+                        "tertiary-container": "var(--tertiary-container)",
+                        "background": "var(--background)",
+                        "surface": "var(--surface)",
+                        "surface-container": "var(--surface-container)",
+                        "surface-container-low": "var(--surface-container-low)",
+                        "surface-container-lowest": "var(--surface-container-lowest)",
+                        "surface-container-high": "var(--surface-container-high)",
+                        "surface-container-highest": "var(--surface-container-highest)",
+                        "on-surface": "var(--on-surface)",
+                        "on-surface-variant": "var(--on-surface-variant)",
+                        "outline": "var(--outline)",
+                        "outline-variant": "var(--outline-variant)",
+                        "error": "var(--error)",
+                        "error-container": "var(--error-container)",
+                        "on-error": "var(--on-error)",
+                        "on-error-container": "var(--on-error-container)"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "body-md": ["Inter", "sans-serif"],
+                        "data-mono": ["Inter", "sans-serif"],
+                        "headline-sm": ["Inter", "sans-serif"],
+                        "label-caps": ["Inter", "sans-serif"],
+                        "headline-md": ["Manrope", "sans-serif"],
+                        "display-lg": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom styling to align with Stitch spacing guidelines -->
+    <style>
+        :root {
+            --primary: #006565;
+            --primary-container: #008080;
+            --on-primary-container: #e3fffe;
+            --secondary: #565e74;
+            --secondary-container: #dae2fd;
+            --on-secondary-fixed: #131b2e;
+            --tertiary: #4c5b71;
+            --tertiary-container: #64748b;
+            --background: #f7f9fb;
+            --surface: #ffffff;
+            --surface-container: #eceef0;
+            --surface-container-low: #f2f4f6;
+            --surface-container-lowest: #ffffff;
+            --surface-container-high: #e6e8ea;
+            --surface-container-highest: #d8dadc;
+            --on-surface: #191c1e;
+            --on-surface-variant: #3e4949;
+            --outline: #6e7979;
+            --outline-variant: #bdc9c8;
+            --error: #ba1a1a;
+            --error-container: #ffdad6;
+            --on-error: #ffffff;
+            --on-error-container: #93000a;
+        }
+
+        /* Dark mode variables matching premium dark color scheme */
+        html.dark {
+            --primary: #76d3d0;
+            --primary-container: #004f4f;
+            --on-primary-container: #e3fffe;
+            --secondary: #bec6dc;
+            --secondary-container: #3e4659;
+            --on-secondary-fixed: #dae2fd;
+            --tertiary: #b3c5e4;
+            --tertiary-container: #33435b;
+            --background: #111414;
+            --surface: #191c1c;
+            --surface-container: #212525;
+            --surface-container-low: #1d2121;
+            --surface-container-lowest: #0e1111;
+            --surface-container-high: #2b3030;
+            --surface-container-highest: #363b3b;
+            --on-surface: #e1e3e3;
+            --on-surface-variant: #bfc8c7;
+            --outline: #899392;
+            --outline-variant: #3f4948;
+            --error: #ffb4ab;
+            --error-container: #93000a;
+            --on-error: #690005;
+            --on-error-container: #ffdad6;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom scrollbar for tables and sidebar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--background);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--outline-variant);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--outline);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased h-screen flex overflow-hidden">
+
+    <!-- Loading Spinner Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-on-surface/20 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-on-surface font-semibold bg-white px-6 py-3 rounded-lg shadow-lg border border-outline-variant" id="loading-text">Membaca dan memetakan data...</p>
+    </div>
+
+    <!-- LEFT SIDEBAR -->
+    <nav class="fixed left-0 top-0 h-full w-[260px] z-20 flex flex-col bg-surface border-r border-outline-variant">
+        <!-- Logo Header -->
+        <div class="px-6 py-6 border-b border-outline-variant/50">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded bg-primary flex items-center justify-center text-white">
+                    <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">assured_workload</span>
+                </div>
+                <div>
+                    <h1 class="font-headline-md text-[17px] font-bold text-primary leading-tight">JPAS Analyzer</h1>
+                    <p class="font-body-md text-on-surface-variant opacity-80 text-[11px] font-medium">Automated Financials</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Navigation (Only visible when has_data is true) -->
+        <div id="sidebar-navigation" class="hidden flex-1 py-4 flex flex-col gap-1 px-2 overflow-y-auto">
+            <a href="#" onclick="switchTab('ringkasan')" id="nav-ringkasan" class="flex items-center gap-3 text-on-secondary-fixed bg-secondary-container border-l-4 border-primary px-4 py-3 rounded-r-lg font-semibold transition-all duration-200">
+                <span class="material-symbols-outlined icon-fill">dashboard</span>
+                <span>Ringkasan Eksekutif</span>
+            </a>
+            <a href="#" onclick="switchTab('laporan')" id="nav-laporan" class="flex items-center gap-3 text-on-surface-variant px-4 py-3 border-l-4 border-transparent hover:bg-surface-container-low transition-colors rounded-r-lg font-medium">
+                <span class="material-symbols-outlined">account_balance</span>
+                <span>Laporan Keuangan</span>
+            </a>
+            <a href="#" onclick="switchTab('underwriting')" id="nav-underwriting" class="flex items-center gap-3 text-on-surface-variant px-4 py-3 border-l-4 border-transparent hover:bg-surface-container-low transition-colors rounded-r-lg font-medium">
+                <span class="material-symbols-outlined">verified_user</span>
+                <span>Kinerja Underwriting</span>
+            </a>
+            <a href="#" onclick="switchTab('investasi')" id="nav-investasi" class="flex items-center gap-3 text-on-surface-variant px-4 py-3 border-l-4 border-transparent hover:bg-surface-container-low transition-colors rounded-r-lg font-medium">
+                <span class="material-symbols-outlined">analytics</span>
+                <span>Investasi &amp; Solvabilitas</span>
+            </a>
+            <a href="#" onclick="switchTab('ojk')" id="nav-ojk" class="flex items-center gap-3 text-on-surface-variant px-4 py-3 border-l-4 border-transparent hover:bg-surface-container-low transition-colors rounded-r-lg font-medium">
+                <span class="material-symbols-outlined">gavel</span>
+                <span>Rasio Regulasi OJK</span>
+            </a>
+            <a href="#" onclick="switchTab('temuan')" id="nav-temuan" class="flex items-center gap-3 text-on-surface-variant px-4 py-3 border-l-4 border-transparent hover:bg-surface-container-low transition-colors rounded-r-lg font-medium">
+                <span class="material-symbols-outlined">description</span>
+                <span>Temuan &amp; Rekomendasi</span>
+            </a>
+
+            <!-- Data Source Dropdown inside Sidebar -->
+            <div class="mt-4 px-2">
+                <details class="bg-surface-container-low border border-outline-variant/60 rounded-lg overflow-hidden group">
+                    <summary class="flex justify-between items-center px-3 py-2 cursor-pointer font-semibold text-xs text-primary bg-surface-container select-none">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[16px]">folder_open</span>
+                            <span>DATASETS ACTIVE</span>
+                        </div>
+                        <span class="material-symbols-outlined text-[16px] transition-transform duration-200 group-open:rotate-180">expand_more</span>
+                    </summary>
+                    <div class="p-3 flex flex-col gap-2 bg-surface text-xs" id="active-files-container">
+                        <!-- Loaded files list will be injected here -->
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t border-outline-variant/50 flex flex-col gap-2 bg-surface">
+            <!-- Reset Button (Only visible when has_data is true) -->
+            <button id="reset-btn" onclick="resetSession()" class="hidden w-full flex items-center justify-center gap-2 py-2 px-4 border border-outline rounded text-primary hover:bg-surface-container-low transition-colors font-semibold text-xs uppercase tracking-wider">
+                <span class="material-symbols-outlined text-[16px]">refresh</span> RESET SESSION
+            </button>
+            <div class="flex flex-col gap-1 text-xs">
+                <a class="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-container-low transition-colors rounded font-medium" href="#">
+                    <span class="material-symbols-outlined text-[18px]">download</span>
+                    <span>Download Template</span>
+                </a>
+                <a onclick="openSupportModal()" class="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-container-low transition-colors rounded font-medium cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">help_outline</span>
+                    <span>Support</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <div class="flex-1 flex flex-col pl-[260px] h-screen relative overflow-hidden bg-background">
+        <!-- Sticky TopAppBar -->
+        <header class="h-16 w-full bg-surface border-b border-outline-variant flex justify-between items-center px-8 sticky top-0 z-10">
+            <div class="font-headline-sm text-base font-semibold text-on-surface">
+                JPAS Automated Financial Analyzer
+            </div>
+            <div class="flex items-center gap-4">
+                <!-- Search -->
+                <div class="relative hidden md:block">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                    <input id="header-search-input" oninput="searchActiveTab(this.value)" class="w-56 h-8 pl-9 pr-4 bg-surface-container-low border border-outline-variant rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none text-[12.5px] text-on-surface placeholder:text-on-surface-variant/80 transition-all font-body-md" placeholder="Cari metrik/lini..." type="text"/>
+                </div>
+                
+                <!-- Add More Files Button -->
+                <button type="button" onclick="document.getElementById('dashboard-file-uploader').click()" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white hover:bg-primary-container rounded text-[11.5px] font-semibold transition-colors">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                    TAMBAH FILE
+                </button>
+                <input type="file" id="dashboard-file-uploader" accept=".xlsx" class="hidden" multiple onchange="uploadMultipleFiles(this)" />
+
+                <!-- Notifications -->
+                <div class="relative">
+                    <button onclick="toggleNotificationMenu(event)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-primary relative">
+                        <span class="material-symbols-outlined text-[20px]">notifications</span>
+                        <span id="notif-badge" class="absolute top-1 right-1 w-1.5 h-1.5 bg-error rounded-full hidden"></span>
+                    </button>
+                    <div id="notif-menu" class="hidden absolute right-0 mt-2 w-80 bg-surface border border-outline-variant rounded-lg shadow-lg p-3 z-30 flex flex-col gap-2">
+                        <div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+                            <span class="text-[11px] font-bold text-primary uppercase">Notifikasi &amp; Peringatan</span>
+                            <button onclick="clearNotifications()" class="text-[10px] text-primary hover:underline">Hapus Semua</button>
+                        </div>
+                        <div class="flex flex-col gap-2 max-h-60 overflow-y-auto text-xs text-left" id="notif-list-container">
+                            <p class="text-xs text-on-surface-variant italic p-2 text-center">Tidak ada notifikasi baru.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <button onclick="openSettingsModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-primary">
+                    <span class="material-symbols-outlined text-[20px]">settings</span>
+                </button>
+
+                <!-- Profile dropdown -->
+                <div class="relative">
+                    <div onclick="toggleProfileMenu(event)" class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-1 shadow-sm cursor-pointer hover:opacity-85 transition-opacity">
+                        <img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwEibxN6YqAyWjMoEdggDVF8kyTNnk_jfhSHSfNOmFDr3QN3FhnOWHR0ebHNDl6x-USb7oRxl_Wnl476qhp8sRY4WCa-1aoKxf2HU9J73YGl2IW5nFJM851Tg53ZUXe1S33fcf07qgwo3GAuzfVZSc0Skm-UnjgFF05PTJxgViImY0TMOYNejY4Bp1cPAumyWfl6nlBt0-Uahvd1-rO0os4KFxCFciQK8320k30wzg6GwlLl2TG1f5IWZ2br5-909J8CmULwOu"/>
+                    </div>
+                    <div id="profile-menu" class="hidden absolute right-0 mt-2 w-60 bg-surface border border-outline-variant rounded-lg shadow-lg p-4 z-30 flex flex-col gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
+                                <img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwEibxN6YqAyWjMoEdggDVF8kyTNnk_jfhSHSfNOmFDr3QN3FhnOWHR0ebHNDl6x-USb7oRxl_Wnl476qhp8sRY4WCa-1aoKxf2HU9J73YGl2IW5nFJM851Tg53ZUXe1S33fcf07qgwo3GAuzfVZSc0Skm-UnjgFF05PTJxgViImY0TMOYNejY4Bp1cPAumyWfl6nlBt0-Uahvd1-rO0os4KFxCFciQK8320k30wzg6GwlLl2TG1f5IWZ2br5-909J8CmULwOu"/>
+                            </div>
+                            <div class="text-left">
+                                <h4 class="font-bold text-xs text-on-surface">Jevan Ihsan</h4>
+                                <p class="text-[10px] text-on-surface-variant">Intern - Askrindo Syariah</p>
+                            </div>
+                        </div>
+                        <hr class="border-outline-variant/30" />
+                        <div class="text-[11px] text-on-surface-variant flex flex-col gap-2 text-left">
+                            <div class="flex justify-between">
+                                <span>Instansi:</span>
+                                <span class="font-semibold text-on-surface text-right">PT Askrindo Syariah</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Departemen:</span>
+                                <span class="font-semibold text-on-surface text-right">Risk Management</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Role:</span>
+                                <span class="font-semibold text-primary text-right">Financial Analyst</span>
+                            </div>
+                        </div>
+                        <hr class="border-outline-variant/30" />
+                        <button onclick="alert('Keluar berhasil (mock)')" class="w-full py-1.5 bg-error/10 hover:bg-error/20 text-error rounded text-xs font-semibold transition-colors flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">logout</span> KELUAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- CANVAS MAIN CONTENT -->
+        <main id="main-scroll" class="flex-1 overflow-y-auto p-8 bg-background">
+            
+            <!-- ----------------- WELCOME SCREEN ----------------- -->
+            <div id="welcome-screen" class="max-w-4xl mx-auto flex flex-col gap-8 py-8 font-body-md">
+                <div class="text-center">
+                    <h2 class="font-headline-md text-2xl font-bold text-primary">Selamat Datang di JPAS Analyzer</h2>
+                    <p class="text-on-surface-variant text-sm mt-2">Semua dataset akan dimuat otomatis saat server start. Klik tombol di bawah jika data belum tersinkronisasi.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <!-- Column 1: Load All Datasets -->
+                    <div class="bg-surface p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between h-72">
+                        <div>
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="material-symbols-outlined text-primary text-[24px]">cloud_sync</span>
+                                <h3 class="text-base font-semibold text-primary">Sync Semua Dataset</h3>
+                            </div>
+                            <p class="text-xs text-on-surface-variant leading-relaxed mb-6">Muat ulang semua 3 file Excel default dari server secara bersamaan: Worksheet Financial, Evaluasi Anper, dan file analisis Enhanced. Data akan terkonsolidasi otomatis.</p>
+                            <div class="flex flex-col gap-1.5 text-[11px] text-on-surface-variant">
+                                <div class="flex items-center gap-2"><span class="text-primary font-bold">📊</span> <span>JPAS_Analysis_Enhanced.xlsx</span></div>
+                                <div class="flex items-center gap-2"><span class="text-primary font-bold">📊</span> <span>Worksheet JPAS Data Financial Mei 2026</span></div>
+                                <div class="flex items-center gap-2"><span class="text-primary font-bold">📊</span> <span>Worksheet Rapat Evaluasi Anper Mei 2026</span></div>
+                            </div>
+                        </div>
+                        <button onclick="loadAllDatasets()" class="w-full py-2.5 bg-primary hover:bg-primary-container text-white font-semibold rounded text-xs transition-colors flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-[16px]">sync</span>
+                            SYNC SEMUA DATASET (3 FILE)
+                        </button>
+                    </div>
+
+                    <!-- Column 2: Upload New File -->
+                    <div class="bg-surface p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between h-72">
+                        <div>
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="material-symbols-outlined text-primary text-[24px]">upload_file</span>
+                                <h3 class="text-base font-semibold text-primary">Unggah File Baru</h3>
+                            </div>
+                            <p class="text-xs text-on-surface-variant leading-relaxed mb-3">Unggah file laporan keuangan JPAS dalam format Excel (.xlsx) untuk dianalisis. File akan digabungkan dengan data yang sudah ada.</p>
+                            <div class="text-[11px] text-on-surface-variant bg-surface-container-low rounded p-2 border border-outline-variant/60">
+                                <b>Catatan:</b> Data otomatis dimuat dari semua 3 file default saat server start.
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button type="button" onclick="document.getElementById('welcome-file-uploader').click()" class="w-full flex flex-col items-center justify-center py-4 border-2 border-dashed border-outline-variant hover:border-primary rounded-lg bg-surface-container-low hover:bg-surface-container/30 transition-all">
+                                <span class="material-symbols-outlined text-outline group-hover:text-primary text-[28px] mb-1">cloud_upload</span>
+                                <span class="text-xs font-semibold text-primary">PILIH FILE EXCEL (.XLSX)</span>
+                            </button>
+                            <input type="file" id="welcome-file-uploader" accept=".xlsx" class="hidden" multiple onchange="uploadMultipleFiles(this)" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features list -->
+                <div class="bg-surface p-6 rounded-xl border border-outline-variant shadow-sm">
+                    <h3 class="text-[12.5px] font-bold text-primary uppercase tracking-wider mb-4">Fitur Analisis Otomatis JPAS:</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex items-start gap-2">
+                            <span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                            <span class="text-xs text-on-surface-variant"><b>Kalkulasi 35+ rasio keuangan</b> — Loss Ratio, Gearing, ROE, dll.</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                            <span class="text-xs text-on-surface-variant"><b>Radar Anomali Dinamis</b> — deteksi otomatis lonjakan/penurunan ekstrem</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                            <span class="text-xs text-on-surface-variant"><b>Analisis Kritis Rantai Efek</b> — narasi sebab-akibat komprehensif</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                            <span class="text-xs text-on-surface-variant"><b>Skor Kesehatan OJK</b> — penilaian GCG dan profitabilitas proksi</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ----------------- MAIN APP CONTENT ----------------- -->
+            <div id="app-content" class="hidden max-w-7xl mx-auto flex flex-col gap-6 font-sans">
+                
+                <!-- 1. Executive Summary Tab -->
+                <div id="tab-ringkasan" class="tab-pane flex flex-col gap-6">
+                    <!-- Page Header -->
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <h2 class="font-headline-md text-[22px] font-bold text-on-surface tracking-tight">Ringkasan Eksekutif</h2>
+                            <p class="text-on-surface-variant text-[13px] mt-1">Overview of key financial performance indicators and portfolio health.</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-[12px] text-on-surface-variant">
+                            <span class="w-2 h-2 rounded-full bg-primary inline-block animate-pulse"></span>
+                            <span>Live Data</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI Cards Grid (4 cols) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
+                        <!-- Gearing Ratio -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 hover:bg-surface-container-low/50 transition-colors flex flex-col justify-between group shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Gearing Ratio</span>
+                                <span class="material-symbols-outlined text-on-surface-variant/50 text-lg">account_balance_wallet</span>
+                            </div>
+                            <div>
+                                <div id="kpi-gearing-val" class="text-[28px] leading-[36px] font-bold text-on-surface tracking-tight">--</div>
+                                <div id="kpi-gearing-status" class="flex items-center gap-1 mt-2 text-[11px] font-semibold text-on-surface-variant">
+                                    <span class="material-symbols-outlined text-[14px]">trending_flat</span>
+                                    <span>Limit: 40.0x</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Loss Ratio -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 hover:bg-surface-container-low/50 transition-colors flex flex-col justify-between group shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Loss Ratio</span>
+                                <span class="material-symbols-outlined text-on-surface-variant/50 text-lg">trending_up</span>
+                            </div>
+                            <div>
+                                <div id="kpi-loss-val" class="text-[28px] leading-[36px] font-bold text-on-surface tracking-tight">--</div>
+                                <div id="kpi-loss-status" class="flex items-center gap-1 mt-2 text-[11px] font-semibold text-primary">
+                                    <span class="material-symbols-outlined text-[14px]">trending_down</span>
+                                    <span>--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ROA -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 hover:bg-surface-container-low/50 transition-colors flex flex-col justify-between group shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">ROA Syariah</span>
+                                <span class="material-symbols-outlined text-on-surface-variant/50 text-lg">monitoring</span>
+                            </div>
+                            <div>
+                                <div id="kpi-roa-val" class="text-[28px] leading-[36px] font-bold text-on-surface tracking-tight">--</div>
+                                <div id="kpi-roa-status" class="flex items-center gap-1 mt-2 text-[11px] font-semibold text-primary">
+                                    <span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                    <span>--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Net Profit -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 hover:bg-surface-container-low/50 transition-colors flex flex-col justify-between group shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Net Profit</span>
+                                <span class="material-symbols-outlined text-on-surface-variant/50 text-lg">payments</span>
+                            </div>
+                            <div>
+                                <div id="kpi-profit-val" class="text-[28px] leading-[36px] font-bold text-on-surface tracking-tight">--</div>
+                                <div id="kpi-profit-status" class="flex items-center gap-1 mt-2 text-[11px] font-semibold text-primary">
+                                    <span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                    <span>--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- IJK Bruto -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 hover:bg-surface-container-low/50 transition-colors flex flex-col justify-between group shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">IJK Bruto</span>
+                                <span class="material-symbols-outlined text-on-surface-variant/50 text-lg">request_quote</span>
+                            </div>
+                            <div>
+                                <div id="kpi-ijk-val" class="text-[28px] leading-[36px] font-bold text-on-surface tracking-tight">--</div>
+                                <div id="kpi-ijk-status" class="flex items-center gap-1 mt-2 text-[11px] font-semibold text-primary">
+                                    <span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                    <span>--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bento Grid for Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- IJK Trend Line Chart -->
+                        <div class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-6 flex flex-col gap-4 shadow-sm h-[400px]">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-sm font-bold text-on-surface">Monthly IJK Trend</h3>
+                                <span class="material-symbols-outlined text-on-surface-variant text-[20px]">show_chart</span>
+                            </div>
+                            <div class="flex-1 relative w-full h-full">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                        <!-- Portfolio Donut Chart -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-6 flex flex-col gap-4 shadow-sm h-[400px]">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-sm font-bold text-on-surface">Portfolio Breakdown</h3>
+                                <span class="material-symbols-outlined text-on-surface-variant text-[20px]">pie_chart</span>
+                            </div>
+                            <div class="flex-1 flex flex-col justify-center items-center relative w-full">
+                                <div class="w-48 h-48 relative flex items-center justify-center">
+                                    <canvas id="portfolioChart"></canvas>
+                                </div>
+                                <div class="w-full mt-4 flex flex-col gap-1.5 px-2 text-xs" id="portfolio-legend-container">
+                                    <!-- Dynamic legend injected via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Laporan Keuangan Tab -->
+                <div id="tab-laporan" class="tab-pane hidden flex flex-col gap-6">
+                    <div>
+                        <h2 class="font-headline-md text-lg font-bold text-on-surface">Laporan Keuangan Konsolidasian</h2>
+                        <p class="text-on-surface-variant text-[12.5px] mt-0.5">Laporan Posisi Keuangan (Neraca), Laba Rugi, dan Arus Kas Konsolidasi.</p>
+                    </div>
+                    <!-- P&L -->
+                    <div class="bg-surface border border-outline-variant rounded-xl p-6 shadow-sm">
+                        <h3 class="text-sm font-bold text-primary mb-4 font-headline-md">Laporan Laba Rugi Komprehensif</h3>
+                        <div id="table-pl-container"></div>
+                    </div>
+                    <!-- Balance Sheet -->
+                    <div class="bg-surface border border-outline-variant rounded-xl p-6 shadow-sm">
+                        <h3 class="text-sm font-bold text-primary mb-4 font-headline-md">Laporan Posisi Keuangan (Neraca)</h3>
+                        <div id="table-bs-container"></div>
+                    </div>
+                    <!-- Cash Flow -->
+                    <div class="bg-surface border border-outline-variant rounded-xl p-6 shadow-sm">
+                        <h3 class="text-sm font-bold text-primary mb-4 font-headline-md">Laporan Arus Kas (Cash Flow Statement)</h3>
+                        <div id="table-cfs-container"></div>
+                    </div>
+                </div>
+
+                <!-- 3. Kinerja Underwriting Tab -->
+                <div id="tab-underwriting" class="tab-pane hidden flex flex-col gap-6">
+                    <!-- Page Header -->
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <h2 class="text-[22px] font-bold text-on-surface tracking-tight">Kinerja Underwriting</h2>
+                            <p class="text-on-surface-variant text-[13px] mt-1">Analisis kontribusi underwriting, loss ratio, dan recoveries per lini bisnis.</p>
+                        </div>
+                        <div class="flex gap-3 relative">
+                            <button onclick="toggleFilterMenu(event)" class="flex items-center gap-2 px-4 py-2 border border-outline text-on-surface rounded-lg hover:bg-surface-container-low transition-colors text-sm font-medium bg-surface-container-lowest">
+                                <span class="material-symbols-outlined text-sm">filter_list</span>
+                                Filter
+                            </button>
+                            <button onclick="exportData()" class="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg hover:opacity-90 transition-colors text-sm font-medium">
+                                <span class="material-symbols-outlined text-sm">download</span>
+                                Export Report
+                            </button>
+                            <!-- Filter Menu Dropdown -->
+                            <div id="filter-menu" class="hidden absolute right-0 mt-11 w-64 bg-surface border border-outline-variant rounded-lg shadow-lg p-4 z-30 flex flex-col gap-3 text-left">
+                                <div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+                                    <span class="text-xs font-bold text-primary uppercase">Filter Lini Bisnis</span>
+                                    <button onclick="resetFilters(event)" class="text-[10px] text-primary hover:underline">Reset All</button>
+                                </div>
+                                <div class="flex flex-col gap-2 text-xs" id="filter-checkboxes-container">
+                                    <!-- Dynamic checkboxes will be injected -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4 KPI Metric Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+                        <!-- Loss Ratio -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 hover:bg-surface-container-low/50 transition-colors flex flex-col justify-between shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Loss Ratio</span>
+                                <span class="material-symbols-outlined text-on-surface-variant/50 text-lg">trending_up</span>
+                            </div>
+                            <div>
+                                <div id="uw-loss-val" class="text-[32px] leading-[40px] font-bold text-on-surface tracking-tight">--<span class="text-xl text-on-surface-variant ml-1">%</span></div>
+                                <div id="uw-loss-sub" class="flex items-center gap-1 mt-2 text-error text-[12px] font-medium">
+                                    <span class="material-symbols-outlined text-[15px]">arrow_upward</span>
+                                    <span>Bruto</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Combined Ratio -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 hover:bg-surface-container-low/50 transition-colors flex flex-col justify-between shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Laba Underwriting</span>
+                                <span class="material-symbols-outlined text-on-surface-variant/50 text-lg">pie_chart</span>
+                            </div>
+                            <div>
+                                <div id="uw-profit-val" class="text-[32px] leading-[40px] font-bold text-on-surface tracking-tight">--</div>
+                                <div id="uw-profit-sub" class="flex items-center gap-1 mt-2 text-primary text-[12px] font-medium">
+                                    <span class="material-symbols-outlined text-[15px]">arrow_upward</span>
+                                    <span>Total Neto</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- IJK Bruto -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 hover:bg-surface-container-low/50 transition-colors flex flex-col justify-between shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">IJK Bruto Total</span>
+                                <span class="material-symbols-outlined text-on-surface-variant/50 text-lg">sync_alt</span>
+                            </div>
+                            <div>
+                                <div id="uw-ijk-val" class="text-[32px] leading-[40px] font-bold text-on-surface tracking-tight">--</div>
+                                <div id="uw-ijk-sub" class="flex items-center gap-1 mt-2 text-on-surface-variant text-[12px] font-medium">
+                                    <span class="material-symbols-outlined text-[15px]">horizontal_rule</span>
+                                    <span>Premi Bruto</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Klaim Neto -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-5 hover:bg-surface-container-low/50 transition-colors flex flex-col justify-between shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Klaim Bruto</span>
+                                <span class="material-symbols-outlined text-on-surface-variant/50 text-lg">payments</span>
+                            </div>
+                            <div>
+                                <div id="uw-klaim-val" class="text-[32px] leading-[40px] font-bold text-on-surface tracking-tight">--</div>
+                                <div id="uw-klaim-sub" class="flex items-center gap-1 mt-2 text-error text-[12px] font-medium">
+                                    <span class="material-symbols-outlined text-[15px]">arrow_upward</span>
+                                    <span>Bruto</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content Grid: Bar Chart + Partner Table -->
+                    <div class="grid grid-cols-12 gap-6">
+                        <!-- Bar Chart: COB Performance -->
+                        <div class="col-span-12 xl:col-span-8 bg-surface-container-lowest border border-outline-variant/50 rounded-xl overflow-hidden flex flex-col" style="min-height:400px">
+                            <div class="p-5 border-b border-outline-variant/30 flex justify-between items-center bg-surface-bright">
+                                <h3 class="text-[15px] font-semibold text-on-surface">Kinerja per Lini Bisnis (COB)</h3>
+                                <div class="flex items-center gap-4 text-[12px]">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-sm bg-primary"></span>
+                                        <span class="text-on-surface-variant">IJK Bruto</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-sm bg-tertiary-fixed-dim"></span>
+                                        <span class="text-on-surface-variant">Laba UW</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-1 p-6">
+                                <div id="table-cob-container"></div>
+                            </div>
+                        </div>
+
+                        <!-- Partner Concentration Table -->
+                        <div class="col-span-12 xl:col-span-4 bg-surface-container-lowest border border-outline-variant/50 rounded-xl overflow-hidden flex flex-col" style="min-height:400px">
+                            <div class="p-5 border-b border-outline-variant/30 flex justify-between items-center bg-surface-bright">
+                                <h3 class="text-[15px] font-semibold text-on-surface">Konsentrasi Mitra</h3>
+                                <button class="text-primary text-[12px] font-medium">Lihat Semua</button>
+                            </div>
+                            <div class="flex-1 overflow-auto">
+                                <div id="table-mitra-concentration"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HUW Details -->
+                    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-6 shadow-sm">
+                        <h3 class="text-[13px] font-bold text-primary mb-4">Driver Input &amp; Parameter Underwriting per Lini Bisnis (Jutaan Rupiah)</h3>
+                        <div id="table-huw-container"></div>
+                    </div>
+
+                    <!-- Analysis Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-6 border-l-4 border-error shadow-sm flex flex-col gap-2">
+                            <div class="font-bold text-error text-[14px]">Ketimpangan Portofolio: Kasus Lini Mikro</div>
+                            <p class="text-on-surface-variant text-[13px] leading-relaxed">
+                                Meskipun lini bisnis <b>Mikro</b> menyumbang pendapatan IJK Bruto terbesar (Rp165,8 M atau 40,9% total), margin labanya tergerus hebat karena loss ratio bruto yang menyentuh <b>76,6%</b>. Debitur mikro PNM yang tanpa agunan fisik menyulitkan recovery penagihan (hanya Rp5,9 M). Akibatnya, Mikro hanya menyumbang 7,5% (Rp7,6 M) dari total laba underwriting.
+                            </p>
+                        </div>
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-6 border-l-4 border-primary shadow-sm flex flex-col gap-2">
+                            <div class="font-bold text-primary text-[14px]">KUR &amp; Retail Sebagai Mesin Laba Utama</div>
+                            <p class="text-on-surface-variant text-[13px] leading-relaxed">
+                                Kontras dengan Mikro, lini <b>KUR</b> menyumbang Rp61,9 M (60,8% total laba) dengan loss ratio 60,2% karena debitur lebih bankable. Sementara itu, lini <b>Retail &amp; Korporasi</b> yang dijamin memiliki agunan jelas dan loss ratio sangat rendah (<b>3,2%</b>) sehingga berkontribusi Rp6,8 M murni laba underwriting dari pendapatan IJK yang hanya Rp5,7 M.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Investasi & Solvabilitas Tab -->
+                <div id="tab-investasi" class="tab-pane hidden flex flex-col gap-6">
+                    <!-- Page Header -->
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <h2 class="text-[22px] font-bold text-on-surface tracking-tight">Investasi &amp; Solvabilitas</h2>
+                            <p class="text-on-surface-variant text-[13px] mt-1">Asset allocation, Gearing ratio compliance, and DuPont decomposition analysis.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="exportData()" class="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg hover:opacity-90 transition-colors text-sm font-medium">
+                                <span class="material-symbols-outlined text-sm">download</span>
+                                Export Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Two-col widgets: Donut + Gearing Gauge -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Asset Allocation Donut -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-6 shadow-sm flex flex-col">
+                            <div class="flex justify-between items-start mb-6">
+                                <h4 class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Alokasi Aset Investasi</h4>
+                                <button class="text-on-surface-variant hover:text-primary">
+                                    <span class="material-symbols-outlined text-sm">more_vert</span>
+                                </button>
+                            </div>
+                            <div class="flex-1 flex items-center justify-center gap-8 py-4">
+                                <!-- CSS Donut Chart -->
+                                <div class="relative w-44 h-44 rounded-full flex-shrink-0" id="investasi-donut-chart" style="background: conic-gradient(#006565 0% 45%, #64748b 45% 75%, #e6e8ea 75% 100%);">
+                                    <div class="absolute inset-[18px] bg-surface-container-lowest rounded-full flex flex-col items-center justify-center shadow-inner p-2 text-center">
+                                        <span id="investasi-donut-total" class="text-[15px] font-bold text-on-surface tracking-tighter whitespace-nowrap">--</span>
+                                        <span class="text-[10px] text-on-surface-variant uppercase tracking-wider mt-0.5">Total</span>
+                                    </div>
+                                </div>
+                                <!-- Legend -->
+                                <div class="flex flex-col gap-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-3 h-3 rounded-full bg-primary flex-shrink-0"></div>
+                                        <div>
+                                            <div class="text-sm font-semibold text-on-surface">SBSN / SUN</div>
+                                            <div class="text-[11px] text-on-surface-variant" id="investasi-sbsn-pct">-- (--)</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-3 h-3 rounded-full bg-tertiary-container flex-shrink-0"></div>
+                                        <div>
+                                            <div class="text-sm font-semibold text-on-surface">Deposito</div>
+                                            <div class="text-[11px] text-on-surface-variant" id="investasi-deposito-pct">-- (--)</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-3 h-3 rounded-full bg-surface-container-high flex-shrink-0"></div>
+                                        <div>
+                                            <div class="text-sm font-semibold text-on-surface">Reksadana</div>
+                                            <div class="text-[11px] text-on-surface-variant" id="investasi-reksadana-pct">-- (--)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gearing Gauge -->
+                        <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-6 shadow-sm flex flex-col">
+                            <div class="flex justify-between items-start mb-4">
+                                <h4 class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Gearing Ratio (Limit OJK: 40x)</h4>
+                                <span id="gearing-action-badge" class="px-2 py-0.5 bg-surface-container rounded text-[11px] font-semibold">--</span>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center justify-center">
+                                <!-- SVG Gauge -->
+                                <div class="w-full max-w-[280px] relative">
+                                    <svg class="w-full h-auto drop-shadow-sm overflow-visible" viewBox="0 0 100 55">
+                                        <!-- Background Arc -->
+                                        <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e6e8ea" stroke-linecap="round" stroke-width="8"></path>
+                                        <!-- Value Arc -->
+                                        <path id="gearing-gauge-arc" d="M 10 50 A 40 40 0 0 1 30 15" fill="none" stroke="#006565" stroke-linecap="round" stroke-width="8"></path>
+                                        <!-- Needle -->
+                                        <g id="gearing-gauge-needle" transform="rotate(0 50 50)">
+                                            <polygon fill="#191c1e" points="48,50 52,50 50,15"></polygon>
+                                            <circle cx="50" cy="50" fill="#191c1e" r="4"></circle>
+                                        </g>
+                                    </svg>
+                                    <div class="absolute bottom-0 left-0 right-0 flex justify-between px-5 text-[11px] text-on-surface-variant">
+                                        <span>0x</span><span class="text-error font-semibold">LIMIT 40x</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <div id="gearing-radial-val" class="text-4xl font-bold text-on-surface tracking-tight">--</div>
+                                    <div class="text-[12px] text-on-surface-variant mt-1">Gearing Ratio Aktual</div>
+                                </div>
+                                <!-- Solvency Metrics -->
+                                <div class="mt-6 w-full flex flex-col gap-3 pt-4 border-t border-outline-variant/40">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[12px] text-on-surface-variant">Outstanding Penjaminan Neto</span>
+                                        <span id="solvency-os-net" class="text-[13px] font-bold text-on-surface">--</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[12px] text-on-surface-variant">Modal Sendiri Bersih (Ekuitas)</span>
+                                        <span id="solvency-equity" class="text-[13px] font-bold text-on-surface">--</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[12px] text-on-surface-variant">Sisa Kapasitas Neto</span>
+                                        <span id="solvency-capacity" class="text-[13px] font-bold text-primary">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OJK Health Score -->
+                    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-6 shadow-sm">
+                        <h3 class="text-[13px] font-bold text-primary mb-4">Skor Kesehatan Keuangan OJK (SEOJK 18/2018)</h3>
+                        <div id="table-health-container"></div>
+                    </div>
+
+                    <!-- DuPont Analysis -->
+                    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl overflow-hidden shadow-sm">
+                        <div class="p-6 border-b border-outline-variant/30 flex justify-between items-center bg-surface-bright">
+                            <div>
+                                <h4 class="text-[16px] font-semibold text-on-surface">Analisis DuPont — Dekomposisi ROE</h4>
+                                <p class="text-[12px] text-on-surface-variant mt-1">Structural drivers for Return on Equity (5-factor decomposition).</p>
+                            </div>
+                            <button class="flex items-center gap-2 text-[12px] font-semibold text-primary hover:opacity-80 transition-colors">
+                                <span class="material-symbols-outlined text-[18px]">filter_list</span> Filter
+                            </button>
+                        </div>
+                        <div id="table-dupont-container" class="overflow-x-auto"></div>
+                        <div id="dupont-narrative-container" class="bg-surface-container-low p-5 border-t border-outline-variant/30 text-[13px] leading-relaxed"></div>
+                    </div>
+                </div>
+
+                <!-- 5. OJK compliance Tab -->
+                <div id="tab-ojk" class="tab-pane hidden flex flex-col gap-6">
+                    <div>
+                        <h2 class="font-headline-md text-lg font-bold text-on-surface">Rasio Regulasi Kesehatan OJK Syariah (PADK 47)</h2>
+                        <p class="text-on-surface-variant text-[12.5px] mt-0.5">Regulatory metrics and compliance threshold checks under OJK guidelines.</p>
+                    </div>
+
+                    <!-- KPI status cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Current Ratio -->
+                        <div class="bg-surface border border-outline-variant rounded-xl p-5 flex flex-col gap-2 relative overflow-hidden shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Current Ratio (OJK)</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#006565" stroke-width="2" id="ojk-cr-icon"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                            </div>
+                            <div id="ojk-cr-val" class="font-display-lg text-2xl font-bold text-on-surface">--</div>
+                            <div class="flex items-center gap-2">
+                                <span id="ojk-cr-badge" class="text-[10px] font-bold px-2 py-0.5 rounded border">--</span>
+                                <span class="text-[11.5px] text-on-surface-variant">Regulasi: &ge; 100.0%</span>
+                            </div>
+                        </div>
+                        <!-- BOPO Syariah -->
+                        <div class="bg-surface border border-outline-variant rounded-xl p-5 flex flex-col gap-2 relative overflow-hidden shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">BOPO Syariah</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#006565" stroke-width="2" id="ojk-bopo-icon"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                            </div>
+                            <div id="ojk-bopo-val" class="font-display-lg text-2xl font-bold text-on-surface">--</div>
+                            <div class="flex items-center gap-2">
+                                <span id="ojk-bopo-badge" class="text-[10px] font-bold px-2 py-0.5 rounded border">--</span>
+                                <span class="text-[11.5px] text-on-surface-variant">Regulasi: &le; 90.0%</span>
+                            </div>
+                        </div>
+                        <!-- Leverage OJK -->
+                        <div class="bg-surface border border-outline-variant rounded-xl p-5 flex flex-col gap-2 relative overflow-hidden shadow-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Leverage OJK</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#006565" stroke-width="2" id="ojk-leverage-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                            </div>
+                            <div id="ojk-leverage-val" class="font-display-lg text-2xl font-bold text-on-surface">--</div>
+                            <div class="flex items-center gap-2">
+                                <span id="ojk-leverage-badge" class="text-[10px] font-bold px-2 py-0.5 rounded border">--</span>
+                                <span class="text-[11.5px] text-on-surface-variant">Regulasi: &le; 3.0x</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 14 ratios Table -->
+                    <div class="bg-surface border border-outline-variant rounded-xl p-6 shadow-sm">
+                        <h3 class="text-sm font-bold text-primary mb-4 font-headline-md">Rasio Regulasi Kesehatan OJK Syariah (PADK 47)</h3>
+                        <div id="table-ojk-container"></div>
+                    </div>
+                </div>
+
+                <!-- 6. Temuan & Rekomendasi Tab -->
+                <div id="tab-temuan" class="tab-pane hidden flex flex-col gap-6">
+                    <div>
+                        <h2 class="font-headline-md text-lg font-bold text-on-surface">Temuan &amp; Rekomendasi</h2>
+                        <p class="text-on-surface-variant text-[12.5px] mt-0.5">Key insights, dynamic anomalies and cause-effect critical analysis.</p>
+                    </div>
+
+                    <!-- Findings triage grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Critical -->
+                        <div>
+                            <div class="font-bold text-error text-[13px] border-b-2 border-error pb-1.5 mb-4 font-headline-md uppercase tracking-wide">TEMUAN KRITIS (Tindakan Segera)</div>
+                            <div id="findings-critical-container" class="flex flex-col gap-3"></div>
+                        </div>
+                        <!-- Warning -->
+                        <div>
+                            <div class="font-bold text-[#d97706] text-[13px] border-b-2 border-[#d97706] pb-1.5 mb-4 font-headline-md uppercase tracking-wide">TEMUAN PERHATIAN (Monitor Aktif)</div>
+                            <div id="findings-warning-container" class="flex flex-col gap-3"></div>
+                        </div>
+                        <!-- Positive -->
+                        <div>
+                            <div class="font-bold text-primary text-[13px] border-b-2 border-primary pb-1.5 mb-4 font-headline-md uppercase tracking-wide">TEMUAN POSITIF (Kekuatan Utama)</div>
+                            <div id="findings-positive-container" class="flex flex-col gap-3"></div>
+                        </div>
+                    </div>
+
+                    <!-- Radar Anomali Dinamis -->
+                    <div class="bg-surface border border-outline-variant rounded-xl p-6 shadow-sm mt-2">
+                        <h3 class="text-sm font-bold text-[#d97706] mb-4 font-headline-md">Radar Anomali Dinamis (Deteksi Otomatis Algoritma)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Membaik -->
+                            <div>
+                                <div class="font-semibold text-primary text-xs border-b border-outline-variant pb-1.5 mb-3 font-headline-md">ANOMALI POSITIF (Membaik)</div>
+                                <div id="anomali-positif-container" class="flex flex-col gap-3"></div>
+                            </div>
+                            <!-- Peringatan -->
+                            <div>
+                                <div class="font-semibold text-[#d97706] text-xs border-b border-outline-variant pb-1.5 mb-3 font-headline-md">ANOMALI PERHATIAN (Netral)</div>
+                                <div id="anomali-peringatan-container" class="flex flex-col gap-3"></div>
+                            </div>
+                            <!-- Memburuk -->
+                            <div>
+                                <div class="font-semibold text-error text-xs border-b border-outline-variant pb-1.5 mb-3 font-headline-md">ANOMALI NEGATIF (Memburuk)</div>
+                                <div id="anomali-negatif-container" class="flex flex-col gap-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cause-Effect Card -->
+                    <div class="flex flex-col gap-4 mt-2">
+                        <h3 class="text-sm font-bold text-primary font-headline-md">Analisis Kritis Rantai Efek Sebab-Akibat Keuangan</h3>
+                        <div id="cause-effect-underwriting" class="bg-surface p-5 rounded-xl border border-outline-variant border-l-[6px] border-primary text-[13px] leading-relaxed shadow-sm"></div>
+                        <div id="cause-effect-profitability" class="bg-surface p-5 rounded-xl border border-outline-variant border-l-[6px] border-[#2563eb] text-[13px] leading-relaxed shadow-sm"></div>
+                        <div id="cause-effect-concentration" class="bg-surface p-5 rounded-xl border border-outline-variant border-l-[6px] border-[#f59e0b] text-[13px] leading-relaxed shadow-sm"></div>
+                        <div id="cause-effect-solvency" class="bg-surface p-5 rounded-xl border border-outline-variant border-l-[6px] border-[#7c3aed] text-[13px] leading-relaxed shadow-sm"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Support Modal -->
+    <div id="support-modal" class="hidden fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+        <div class="bg-surface border border-outline-variant rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="px-6 py-4 bg-primary text-white flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined">help_outline</span>
+                    <h3 class="font-headline-md font-bold text-sm uppercase tracking-wider">Hubungi Support</h3>
+                </div>
+                <button onclick="closeSupportModal()" class="w-6 h-6 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            </div>
+            <form id="support-form" onsubmit="submitSupportForm(event)" class="p-6 flex flex-col gap-4 text-left">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-on-surface-variant">Nama Lengkap</label>
+                    <input type="text" required class="px-3 py-2 bg-surface-container-low border border-outline-variant rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none text-xs text-on-surface" placeholder="Nama Anda" />
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-on-surface-variant">Email</label>
+                    <input type="email" required class="px-3 py-2 bg-surface-container-low border border-outline-variant rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none text-xs text-on-surface" placeholder="email@askrindosyariah.co.id" />
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-on-surface-variant">Kategori Kendala</label>
+                    <select class="px-3 py-2 bg-surface-container-low border border-outline-variant rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none text-xs text-on-surface">
+                        <option>Kesalahan Parsing Data (Excel)</option>
+                        <option>Formatting Laporan Keuangan</option>
+                        <option>Fitur Dashboard & Visualisasi</option>
+                        <option>Saran & Masukan Lainnya</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-on-surface-variant">Deskripsi Masalah</label>
+                    <textarea required rows="4" class="px-3 py-2 bg-surface-container-low border border-outline-variant rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none text-xs text-on-surface placeholder:text-on-surface-variant/50" placeholder="Tuliskan kendala secara detail..."></textarea>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-on-surface-variant mt-2 border-t border-outline-variant/30 pt-3">
+                    <div class="flex flex-col">
+                        <span>📞 021-123456 (Ext. 777)</span>
+                        <span>✉️ support@jpas-analyzer.co.id</span>
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-container text-white font-semibold rounded text-xs transition-colors">
+                        KIRIM TIKET
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+        <div class="bg-surface border border-outline-variant rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="px-6 py-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-low">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">settings</span>
+                    <h3 class="font-headline-md font-bold text-sm text-primary uppercase tracking-wider">Pengaturan Dashboard</h3>
+                </div>
+                <button onclick="closeSettingsModal()" class="w-6 h-6 rounded-full hover:bg-surface-container-high flex items-center justify-center transition-colors">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            </div>
+            <div class="p-6 flex flex-col gap-5 text-left">
+                <!-- Theme Toggle -->
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="text-xs font-semibold text-on-surface">Mode Gelap (Dark Mode)</h4>
+                        <p class="text-[10px] text-on-surface-variant">Ubah tema tampilan aplikasi</p>
+                    </div>
+                    <button onclick="toggleDarkMode()" id="darkmode-toggle-btn" class="w-12 h-6 bg-outline-variant rounded-full p-1 transition-colors duration-200 relative flex items-center">
+                        <span class="w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 translate-x-0" id="darkmode-toggle-dot"></span>
+                    </button>
+                </div>
+                <!-- Auto-Refresh -->
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="text-xs font-semibold text-on-surface">Auto-Refresh Laporan</h4>
+                        <p class="text-[10px] text-on-surface-variant">Interval pembaruan data otomatis</p>
+                    </div>
+                    <select id="settings-refresh-interval" class="px-3 py-1.5 bg-surface-container-low border border-outline-variant rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none text-xs text-on-surface" onchange="updateAutoRefresh(this.value)">
+                        <option value="none">Manual</option>
+                        <option value="30000">30 Detik</option>
+                        <option value="60000">1 Menit</option>
+                        <option value="300000">5 Menit</option>
+                    </select>
+                </div>
+                <!-- Number Format Option -->
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="text-xs font-semibold text-on-surface">Format Tampilan Angka</h4>
+                        <p class="text-[10px] text-on-surface-variant">Format pemisah ribuan & desimal</p>
+                    </div>
+                    <select id="settings-number-format" class="px-3 py-1.5 bg-surface-container-low border border-outline-variant rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none text-xs text-on-surface" onchange="updateNumberFormat(this.value)">
+                        <option value="id">Indonesian (Rp 1.000,00)</option>
+                        <option value="en" disabled>English (Rp 1,000.00)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inject frontend logic -->
+    <script src="app.js?v=1.0.2"></script>
+</body>
+</html>

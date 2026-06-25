@@ -26,3 +26,13 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Build artifacts & temp
+*.zip
+__pycache__/
+*.pyc
+
+# Internal / dev-only files
+stitch_output/
+GEMINI.md
+test_*.py

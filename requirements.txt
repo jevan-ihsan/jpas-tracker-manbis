@@ -1,5 +1,7 @@
-streamlit==1.45.0
 pandas>=2.0.0
 numpy>=1.26.0
-plotly>=5.18.0
 openpyxl>=3.1.0
+fastapi>=0.100.0
+uvicorn>=0.20.0
+python-multipart>=0.0.6
+slowapi>=0.1.9
