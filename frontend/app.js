@@ -27,25 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initFilterMenu();
 });
 
-// Load all default datasets at once
-async function loadAllDatasets() {
-    showLoading('Memuat semua 3 file dataset... Ini mungkin membutuhkan beberapa detik.');
-    try {
-        const res = await fetch('/api/load-all', { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) {
-            alert('Error: ' + (data.detail || 'Gagal memuat dataset'));
-        } else {
-            const msg = `Berhasil memuat ${data.loaded.length} file.${data.errors.length ? '\nError: ' + data.errors.join(', ') : ''}`;
-            console.log('[loadAllDatasets]', msg, data);
-            await checkStatus();
-        }
-    } catch (err) {
-        alert('Gagal menghubungi server: ' + err);
-    } finally {
-        hideLoading();
-    }
-}
 
 // Show / Hide Loading Overlay
 function showLoading(text) {
