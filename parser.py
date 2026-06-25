@@ -894,7 +894,7 @@ def classify_columns(df_headers):
                 prev_idx = col_mapping['curr_month']
                 prev_h_norm = normalize_string(df_headers[prev_idx])
                 prev_is_ytd = 's/d' in prev_h_norm or 's.d' in prev_h_norm or 'ytd' in prev_h_norm or 'kumulatif' in prev_h_norm or 'per ' in prev_h_norm or prev_h_norm.startswith('per') or 'audited' in prev_h_norm
-                if is_ytd or not prev_is_ytd:
+                if is_ytd and not prev_is_ytd:
                     col_mapping['curr_month'] = idx
             else:
                 col_mapping['curr_month'] = idx
@@ -904,7 +904,7 @@ def classify_columns(df_headers):
                 prev_idx = col_mapping['prev_month']
                 prev_h_norm = normalize_string(df_headers[prev_idx])
                 prev_is_ytd = 's/d' in prev_h_norm or 's.d' in prev_h_norm or 'ytd' in prev_h_norm or 'kumulatif' in prev_h_norm or 'per ' in prev_h_norm or prev_h_norm.startswith('per') or 'audited' in prev_h_norm
-                if is_ytd or not prev_is_ytd:
+                if is_ytd and not prev_is_ytd:
                     col_mapping['prev_month'] = idx
             else:
                 col_mapping['prev_month'] = idx
@@ -914,7 +914,7 @@ def classify_columns(df_headers):
                 prev_idx = col_mapping['yoy_prev']
                 prev_h_norm = normalize_string(df_headers[prev_idx])
                 prev_is_ytd = 's/d' in prev_h_norm or 's.d' in prev_h_norm or 'ytd' in prev_h_norm or 'kumulatif' in prev_h_norm or 'per ' in prev_h_norm or prev_h_norm.startswith('per') or 'audited' in prev_h_norm
-                if is_ytd or not prev_is_ytd:
+                if is_ytd and not prev_is_ytd:
                     col_mapping['yoy_prev'] = idx
                     col_mapping['prev_year_yoy'] = idx
             else:
@@ -1652,15 +1652,17 @@ def parse_excel_file(file_path):
             
     # Select the most complete candidate sheet for each type
     if sheet_candidates['BS']:
-        # Sort by score desc (total_points, score_curr), then prefer 'kinerja' names over 'summary' names slightly as a tie-breaker
-        best_bs = sorted(sheet_candidates['BS'], key=lambda x: (x[1], 'kinerja' in x[0].lower(), 'summary' in x[0].lower()), reverse=True)[0]
+        # Prefer sheets that actually have current-month data (score_curr>0); a sheet
+        # with many columns but zero current data is useless. Then by completeness.
+        best_bs = sorted(sheet_candidates['BS'], key=lambda x: (x[1][1] > 0, x[1][0], x[1][1], 'kinerja' in x[0].lower(), 'summary' in x[0].lower()), reverse=True)[0]
         result['bs_data'] = best_bs[2]
         if best_bs[3] is not None:
             result['bs_df'] = filter_statement_columns(best_bs[3])
-            
+
     if sheet_candidates['PL']:
-        # Sort by score desc (total_points, score_curr), then prefer 'kinerja' names over 'summary' names slightly as a tie-breaker
-        best_pl = sorted(sheet_candidates['PL'], key=lambda x: (x[1], 'kinerja' in x[0].lower(), 'summary' in x[0].lower()), reverse=True)[0]
+        # Prefer sheets that actually have current-month data (score_curr>0); a sheet
+        # with many columns but zero current data is useless. Then by completeness.
+        best_pl = sorted(sheet_candidates['PL'], key=lambda x: (x[1][1] > 0, x[1][0], x[1][1], 'kinerja' in x[0].lower(), 'summary' in x[0].lower()), reverse=True)[0]
         result['pl_data'] = best_pl[2]
         if best_pl[3] is not None:
             result['pl_df'] = filter_statement_columns(best_pl[3])
